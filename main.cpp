@@ -60,6 +60,10 @@
 //------------------------------------------------------------------------------
 #include <GLFW/glfw3.h>
 //------------------------------------------------------------------------------
+#include "Utils.h"
+#include "PointATC3DG.h"
+#include <usb.h>
+
 using namespace chai3d;
 using namespace std;
 //------------------------------------------------------------------------------
@@ -67,6 +71,16 @@ using namespace std;
 //typedef Eigen::Matrix<float, 8, 1> vector8f;
 void readFTdata(void *shared_data);
 ForceSensor Force;
+
+//---------------------------------------------------------------------
+//Position Sensor
+PointATC3DG bird;
+
+
+double dX, dY, dZ, dAzimuth, dElevation, dRoll;
+
+int numsen=bird.getNumberOfSensors();
+
 //------------------------------------------------------------------------------
 // GENERAL SETTINGS
 //------------------------------------------------------------------------------
@@ -223,6 +237,8 @@ int main(int argc, char* argv[])
     cout << "[m] - Enable/Disable vertical mirroring" << endl;
     cout << "[q] - Exit application" << endl;
     cout << endl << endl;
+
+
 
 
     //--------------------------------------------------------------------------
@@ -776,6 +792,11 @@ void updateHaptics(void* shared_data)
 
 void readFTdata(void *shared_data)
 {
+    int sennum=0;
+
+    //if( !bird ) return -1;
+    //bird.setSuddenOutputChangeLock( 0 );
+    //std::cout << "nSensors: " << numsen << std::endl;
     std::cout << "Here!!!" << std::endl;
     char outFileString[12] = "testing.csv";
     FILE *outFilePtr;
@@ -785,7 +806,9 @@ void readFTdata(void *shared_data)
  
     int frequency =1000;
     Force.FTSetOffset(1000);//Get the offset from the first 1000 data
-
+    //bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
+    //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
+    //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
     while (!exitKey) {
         FT_data = Force.GetCurrentFT(numSample) ;
         *(Vector6FT*)(shared_data) = FT_data;
