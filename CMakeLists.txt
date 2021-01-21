@@ -61,8 +61,6 @@ add_library(PointATC3DG
 	/home/naghmehz/Documents/ATC3DGTracker/include/Utils.h
 	)
 include( "/home/naghmehz/Documents/ATC3DGTracker/cmake/FindLibUSB.cmake" )
-
-
 INCLUDE_DIRECTORIES("/home/naghmehz/Documents/ATC3DGTracker/lib")
 INCLUDE_DIRECTORIES("/home/naghmehz/Documents/sensoray-sdk/driver")
 link_directories("/home/naghmehz/Documents/sensoray-sdk/driver")
