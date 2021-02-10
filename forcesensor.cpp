@@ -48,7 +48,7 @@ void ForceSensor::FTSetOffset(int num_initread){
  	FTAverageFilter(_numsample, &FTdata);
 	FTdata = FTdata - offset;
 	*_FT = calibration_matrix * FTdata ;
-	std::cout<<FT[2]<<std::endl;
+	//std::cout<<FT[2]<<std::endl;
 };
 
  Vector6FT ForceSensor::GetCurrentFT(int _numsample){
