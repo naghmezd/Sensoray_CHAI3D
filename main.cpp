@@ -76,12 +76,12 @@ ForceSensor Force;
 
 //---------------------------------------------------------------------
 //Position Sensor
-//PointATC3DG bird;
+PointATC3DG bird;
 
 
-//double dX, dY, dZ, dAzimuth, dElevation, dRoll;
+double dX, dY, dZ, dAzimuth, dElevation, dRoll;
 
-//int numsen=bird.getNumberOfSensors();
+int numsen=bird.getNumberOfSensors();
 
 //------------------------------------------------------------------------------
 // GENERAL SETTINGS
@@ -438,13 +438,8 @@ int main(int argc, char* argv[])
     // create a thread which starts the main haptics rendering loop
     hapticsThread = new cThread();
     forceThread = new cThread();
-    //time_t ta=time(NULL);
     hapticsThread->start(updateHaptics, CTHREAD_PRIORITY_HAPTICS, a);
     forceThread->start(readFTdata , CTHREAD_PRIORITY_HAPTICS, a);
-    //time_t tb=time(NULL);
-    //std::cout << rec_count << " samples collected" << std::endl;
-    //std::cout << tb-ta << " seconds elapsed" << std::endl;
-    //std::cout << rec_count/(tb-ta) << " samples per second" << std::endl;
     // exit
     // setup callback when application exits
     atexit(close);
@@ -821,18 +816,22 @@ void readFTdata(void *shared_data)
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
     char buffer [80];
+    //char buffer2 [80];
     //snprintf(buffer, sizeof(buffer), "file_%d.txt", 10);
     strftime (buffer,80,"%Y-%m-%d-%H-%M-%S.csv",now);
     std::ofstream myfile;
     myfile.open (buffer);
+    //int participant_num;
+    //std::cout<<"Participate number: "<<std::endl;
+    //cin>>participant_num;
+    //strftime (buffer2,80,"file %i", n,".csv",now);
+    //std::ofstream myfile2("file_no_" + std::to_string(participant_num) +".csv");
+    //myfile2.open (buffer2);
     int sennum=0;
     //std::cout<<Kp<<std::endl;
     //if( !bird ) return -1;
-    //bird.setSuddenOutputChangeLock( 0 );
-    //std::cout << "nSensors: " << numsen << std::endl;
-    //char outFileString[13] = "testing.csv";
-    //FILE *outFilePtr;
-    //outFilePtr = fopen(outFileString, "w+");
+    bird.setSuddenOutputChangeLock( 0 );
+    std::cout << "nSensors: " << numsen << std::endl;
     std::cout << "Here!!!" << std::endl;
     int num=1;
     Vector6FT FT_data;
@@ -840,36 +839,23 @@ void readFTdata(void *shared_data)
     int frequency =1000;
     Force.FTSetOffset(1000);//Get the offset from the first 1000 data
     
-    //int rec_count=0;     
-    //time_t ta=time(NULL);
-    //time_t tb=time(NULL);
-    while (!exitKey) {
-        //std::cout<<"Success"<<std::endl;
-        FT_data = Force.GetCurrentFT(numSample) ;
-        *(Vector6FT*)(shared_data) = FT_data;
-        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<"\n";
-        //fprintf(outFilePtr, "%f, %f, %f, %f, %f, %f, %.4f, %.4f, %.4f, %.4f\n", FT_data[0], FT_data[1], FT_data[2], FT_data[3], FT_data[4], FT_data[5], position(0), position(1), position(2), Kp);
-        //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
-        //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
-        
-    }
-     myfile.close();
-    /*
-    while (!exitKey) {
-        rec_count++;
-        bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
-        FT_data = Force.GetCurrentFT(numSample) ;
-        *(Vector6FT*)(shared_data) = FT_data;
-        //fprintf(outFilePtr, "%f, %f, %f, %f, %f, %f, %.4f, %.4f, %.4f\n", FT_data[0], FT_data[1], FT_data[2], FT_data[3], FT_data[4], FT_data[5], position(0), position(1), position(2));
-        //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
-        //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
 
+    auto t1 = std::chrono::high_resolution_clock::now();
+    while (!exitKey) {
+        bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+        FT_data = Force.GetCurrentFT(numSample) ;
+        *(Vector6FT*)(shared_data) = FT_data;
+        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
+        //myfile2 <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
+        //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
+        //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
     }
-    */
-    //tb=time(NULL);
-    //std::cout << rec_count << " samples collected" << std::endl;
-    //std::cout << tb-ta << " seconds elapsed" << std::endl;
-    //std::cout << rec_count/(tb-ta) << " samples per second" << std::endl;
+
+    
+    myfile.close();
+    //myfile2.close();
     
 }
 
