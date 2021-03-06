@@ -76,12 +76,12 @@ ForceSensor Force;
 
 //---------------------------------------------------------------------
 //Position Sensor
-PointATC3DG bird;
+//PointATC3DG bird;
 
 
-double dX, dY, dZ, dAzimuth, dElevation, dRoll;
+//double dX, dY, dZ, dAzimuth, dElevation, dRoll;
 
-int numsen=bird.getNumberOfSensors();
+//int numsen=bird.getNumberOfSensors();
 
 //------------------------------------------------------------------------------
 // GENERAL SETTINGS
@@ -178,7 +178,10 @@ int height = 0;
 // swap interval for the display context (vertical synchronization)
 int swapInterval = 1;
 int rec_count=0;     
-double Kp = 100; // [N/m]
+//double Kp = 202.0; // [N/m]
+double Kp = 200.0; // [N/m]
+int case_num =0;
+double adjust[22];
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -438,8 +441,13 @@ int main(int argc, char* argv[])
     // create a thread which starts the main haptics rendering loop
     hapticsThread = new cThread();
     forceThread = new cThread();
+    //time_t ta=time(NULL);
     hapticsThread->start(updateHaptics, CTHREAD_PRIORITY_HAPTICS, a);
     forceThread->start(readFTdata , CTHREAD_PRIORITY_HAPTICS, a);
+    //time_t tb=time(NULL);
+    //std::cout << rec_count << " samples collected" << std::endl;
+    //std::cout << tb-ta << " seconds elapsed" << std::endl;
+    //std::cout << rec_count/(tb-ta) << " samples per second" << std::endl;
     // exit
     // setup callback when application exits
     atexit(close);
@@ -578,8 +586,19 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     /////////////////PEST
         else if (a_key == GLFW_KEY_N)
     {
-        Kp=Kp+100;
+        double K[]={269.1499, 490.81957,697.33,889.5498, 1068.3, 1234.55, 1389.062,1532.7,    1666.4,    1790.978,    1907.287,    2016.2,    2118.6,  2215.3,    2307.2,    2395.18,    2480.07,   2562.74,    2644.055,    2724.877,    2806.07,    2888.495,    2973.02,3060.49,3151.79,3247.775,3349.3,3457.24,3572.4};
+        //double K[]={200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,3200};
+        Kp=K[case_num];
+        //double adjust[] ={202, 339.5,  471.5,  598.9,  722.5,  843.2,  961.7,  1078.9, 1195.7, 1312.9, 1431.4, 1551.9, 1675.3, 1802.5, 1934.3, 2071.5, 2215,    2365.6, 2524.2, 2691.5, 2868.5, 3056};
+
+        //double adjust[]={30.42, 101.13, 174.51, 250.28, 328.15, 407.83, 489.01, 571.42, 654.75, 738.71, 823.02, 907.37, 991.49, 1075.07,1157.82, 1239.45,1319.66,  1398.18, 1474.69, 1548.92,1620.56,1689.33, 1754.93, 1817.07,1875.46, 1929.8, 1979.81, 2025.19,2065.65, 2100.9, 2130.63, 2154.57};
+        //Kp=adjust[case_num];
+
+        //double adjust[]={140,150,150,160,170,180,200,210,225,240,270,290,310,330,360,380,420,450,480,510,550,600,630,670,720,770,810,860,910,1020};
+        //Kp=K[case_num]+adjust[case_num];
         std::cout<<Kp<<std::endl;
+        case_num++;
+    
     }
 /*
             else if (a_key == GLFW_KEY_B)
@@ -759,9 +778,10 @@ void updateHaptics(void* shared_data)
         
         // variables for forces
         cVector3d force (0,0,0);
+        cVector3d gravityCorrection (3.5, 0.0, -2.5);
         cVector3d torque (0,0,0);
         double gripperForce = 0.0;
-
+    
         // apply force field
         if (useForceField)
         {
@@ -769,7 +789,11 @@ void updateHaptics(void* shared_data)
             
             cVector3d forceField = Kp * (desiredPosition - position);
             force.add(forceField);
+            force.add(gravityCorrection);
+        }
 
+
+        /*
             // compute angular torque
             double Kr = 0.05; // [N/m.rad]
             cVector3d axis;
@@ -798,8 +822,9 @@ void updateHaptics(void* shared_data)
             double Kvg = 1.0 * info.m_maxGripperAngularDamping;
             gripperForce = gripperForce - Kvg * gripperAngularVelocity;
         }
-
+        */
         // send computed force, torque, and gripper force to haptic device
+        // std::cout<<force<<std::endl;
         hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
 
         // signal frequency counter
@@ -816,22 +841,18 @@ void readFTdata(void *shared_data)
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
     char buffer [80];
-    //char buffer2 [80];
     //snprintf(buffer, sizeof(buffer), "file_%d.txt", 10);
     strftime (buffer,80,"%Y-%m-%d-%H-%M-%S.csv",now);
     std::ofstream myfile;
     myfile.open (buffer);
-    //int participant_num;
-    //std::cout<<"Participate number: "<<std::endl;
-    //cin>>participant_num;
-    //strftime (buffer2,80,"file %i", n,".csv",now);
-    //std::ofstream myfile2("file_no_" + std::to_string(participant_num) +".csv");
-    //myfile2.open (buffer2);
     int sennum=0;
     //std::cout<<Kp<<std::endl;
     //if( !bird ) return -1;
-    bird.setSuddenOutputChangeLock( 0 );
-    std::cout << "nSensors: " << numsen << std::endl;
+    //bird.setSuddenOutputChangeLock( 0 );
+    //std::cout << "nSensors: " << numsen << std::endl;
+    //char outFileString[13] = "testing.csv";
+    //FILE *outFilePtr;
+    //outFilePtr = fopen(outFileString, "w+");
     std::cout << "Here!!!" << std::endl;
     int num=1;
     Vector6FT FT_data;
@@ -839,23 +860,36 @@ void readFTdata(void *shared_data)
     int frequency =1000;
     Force.FTSetOffset(1000);//Get the offset from the first 1000 data
     
-
-    auto t1 = std::chrono::high_resolution_clock::now();
+    //int rec_count=0;     
+    //time_t ta=time(NULL);
+    //time_t tb=time(NULL);
     while (!exitKey) {
-        bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+        //std::cout<<"Success"<<std::endl;
         FT_data = Force.GetCurrentFT(numSample) ;
         *(Vector6FT*)(shared_data) = FT_data;
-        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
-        //myfile2 <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
+        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<"\n";
+        //fprintf(outFilePtr, "%f, %f, %f, %f, %f, %f, %.4f, %.4f, %.4f, %.4f\n", FT_data[0], FT_data[1], FT_data[2], FT_data[3], FT_data[4], FT_data[5], position(0), position(1), position(2), Kp);
         //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
         //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
+        
     }
+     myfile.close();
+    /*
+    while (!exitKey) {
+        rec_count++;
+        bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
+        FT_data = Force.GetCurrentFT(numSample) ;
+        *(Vector6FT*)(shared_data) = FT_data;
+        //fprintf(outFilePtr, "%f, %f, %f, %f, %f, %f, %.4f, %.4f, %.4f\n", FT_data[0], FT_data[1], FT_data[2], FT_data[3], FT_data[4], FT_data[5], position(0), position(1), position(2));
+        //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
+        //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
 
-    
-    myfile.close();
-    //myfile2.close();
+    }
+    */
+    //tb=time(NULL);
+    //std::cout << rec_count << " samples collected" << std::endl;
+    //std::cout << tb-ta << " seconds elapsed" << std::endl;
+    //std::cout << rec_count/(tb-ta) << " samples per second" << std::endl;
     
 }
 
