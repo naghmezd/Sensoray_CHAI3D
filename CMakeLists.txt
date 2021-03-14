@@ -45,6 +45,11 @@ set (CHAI3D_LIBRARIES ${CHAI3D_LIBRARIES} usb-1.0 rt pthread dl)
 add_executable(chai_demo main.cpp)
 
 add_library(
+	pest
+	pest.cpp
+	pest.hpp
+	)
+add_library(
 	simple826
 	simple826.cpp
 	simple826.hpp
@@ -54,6 +59,11 @@ add_library(
 	forcesensor.cpp
 	forcesensor.hpp
 	)
+#add_library(
+#	hapticengine
+#	hapticengine.cpp
+#	hapticengine.hpp
+#	)
 
 add_library(PointATC3DG 
 	/home/naghmehz/Documents/ATC3DGTracker/lib/PointATC3DG.cpp 
@@ -70,4 +80,6 @@ target_link_libraries(forcesensor PRIVATE  simple826 "/home/naghmehz/Documents/s
 target_link_libraries(PointATC3DG PUBLIC "/home/naghmehz/Documents/ATC3DGTracker/lib/libatclib.so" "/home/naghmehz/Documents/ATC3DGTracker/lib/libatclib.so.0.0.1" ${LIBUSB_LIBRARY} m)
 target_link_libraries(chai_demo PRIVATE  forcesensor simple826 m)
 target_link_libraries(chai_demo PRIVATE  PointATC3DG m)
+#target_link_libraries(chai_demo PRIVATE  hapticengine m)
+target_link_libraries(chai_demo PRIVATE  pest m)
 target_link_libraries(chai_demo  PUBLIC  "/home/naghmehz/Documents/chai3d-3.2.0/lib/release/lin-x86_64-cc/libchai3d.a" "/home/naghmehz/Documents/chai3d-3.2.0/external/DHD/lib/lin-x86_64/libdrd.a" usb-1.0 glfw OpenGL::GL  ${CMAKE_DL_LIBS} Threads::Threads)
