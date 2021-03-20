@@ -60,17 +60,17 @@
 
 class Pest{
     private:
-        double new_stimulus[100]; // Pest creates the next stimulus based on previous stimuli in each iteration and keep it in new_stimulus[i]
-        double min_step=1.0; //Rule 5: min_step is the minimum step size that we indicate to exit when (new_stimulus[n] - new_stimulus[n-1]) reaches there
-        double max_step; //Rule 6: maximum step that is (max-min)
-        double max; // Maximum stimulus that is given by user
-        double min; // Minimum stimmulus that is given by user
-        int prev_answer=0; // Pest requires to know the previous answer in order to choose the next step size
-        double direction =1.0; //Direction of new stimulus: it is 1 if the next stimulus is in the same direction as theprevious one, otherwise (-1)
+        double new_stimulus[100];   // Pest creates the next stimulus based on previous stimuli in each iteration and keep it in new_stimulus[i]
+        double min_step_size;        //Rule 5: min_step is the minimum step size that we indicate to exit when (new_stimulus[n] - new_stimulus[n-1]) reaches there
+        double max_step_size;            //Rule 6: maximum step that is (max-min)
+        double max;                 // Maximum stimulus that is given by user
+        double min;                 // Minimum stimmulus that is given by user
+        int prev_answer=0;          // Pest requires to know the previous answer in order to choose the next step size
+        double direction =1.0;      //Direction of new stimulus: it is 1 if the next stimulus is in the same direction as theprevious one, otherwise (-1)
         int step_three=2; // Rule 4:  Whether a third successive step in a given direction is the same as or double the second depends on the on the sequence
                             // of steps leading to the most recent reversal. (step_three=2, since it starts from 0).
         bool doubled=false; //It is a flag for Rule 4, to decide wether the step size should be the same or doubled
-        double init_step; // Rule 2: the first and second step size is equal to init_step which has to be a multiplication of max_step
+        double init_step_size; // Rule 2: the first and second step size is equal to init_step which has to be a multiplication of max_step
         int trial_number=0; // Which trial number are we in. starts from 0 to total trial numbers(that has to be defined in main).
         int num_steps_samedir=0; // number of steps in one direction after each change of direction. Everytime restarts from 0.
         int n=0; // iteration number that is used for trial number
@@ -82,8 +82,8 @@ class Pest{
     public:
         bool flag = true; //Rule 5: exit rule if threshold reaches minimum step.
         int GetTrialNumber(); //get trial number to be used in main: if the threshhold doesn't reach the min step size, after how many steps we want it to exit.
-        Pest(double min, double max,double _init_step); //Instructor to initialize 
-        void Initialize(double _min, double _max,double _init_step); //Initialize max min and initial step size
+        Pest(double min, double max,double _init_step,double _min_step_size); //Instructor to initialize 
+        void Initialize(double _min, double _max,double _init_step_size,double _min_step_size); //Initialize max min and initial step size
         double NextStimulus(double answer); //next stimulus is the final function that user can use it in main to receive the next stimulus
         
 

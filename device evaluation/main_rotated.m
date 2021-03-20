@@ -50,7 +50,7 @@ clc;clear all;
 % end
 % k=k(2:30);
 % hold on
-% plot(k,k)
+%plot(k,k)
 % g_unmodified = fit(k(1:29)',stiff_unmodified(1:29)','poly2','Normalize','on','Robust','Bisquare');
 % a=plot(g_unmodified,k(1:29)',stiff_unmodified(1:29)','.')
 %legend('Input','Modified Output','Modified Fit','Unmodified Output','Unmodified Fit')
@@ -78,13 +78,13 @@ for i=2:30
    k(1,i)=i*100;
 end
 k=k(2:30);
-figure
 hold on
-plot(k,k)
+plot(k,k,'k','LineWidth',2)
 g_unmodified = fit(k(1:29)',stiff_unmodified(1:29)','poly2','Normalize','on','Robust','Bisquare');
 b=plot(g_unmodified,k(1:29)',stiff_unmodified(1:29)','.');
 set(b,'color','b','LineWidth',2)
 g_prime = fit(stiff_unmodified(1:29)',k(1:29)','poly2','Normalize','on','Robust','Bisquare');
+%x2=1:3000; y2=polyval(g_prime,x2);plot(stiff_unmodified(1:29)',k(1:29)','o',x2,y2)
 % figure
 %b=plot(g_prime,stiff_unmodified(1:29)',k(1:29)','.')
 for i=1:30
@@ -99,3 +99,6 @@ stiff_modified(:)=(force(:)./position_modified(:));
 g_modified = fit(k(1:29)',stiff_modified(1:29)','poly2','Normalize','on','Robust','Bisquare');
 a=plot(g_modified,k(1:29)',stiff_modified(1:29)','.')
 set(a,'color','r','LineWidth',2)
+legend('Input','Unmodified Output','Poly2 Fit- Unmodified Output','Modified Output','Poly2 Fit- Modified Output')
+ylabel('Actual Stiffness')
+xlabel('Desired Stiffness')

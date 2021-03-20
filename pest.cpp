@@ -56,16 +56,17 @@
 #include "pest.hpp"
 using namespace std;
 //------------------------------------------------------------------------------
-Pest::Pest(double min, double max,double _init_step){  //Instructor to initialize 
-    Initialize(min, max, _init_step);
+Pest::Pest(double min, double max,double _init_step_size, double _min_step_size){  //Instructor to initialize 
+    Initialize(min, max, _init_step_size,_min_step_size);
 }
 
-void Pest::Initialize(double _min, double _max,double _init_step) //Initialize max min max_step size and initial_step size
+void Pest::Initialize(double _min, double _max,double _init_step_size,double _min_step_size) //Initialize max min max_step size and initial_step size
 {
     min = _min;
     max = _max;
-    init_step = _init_step;
-    max_step = max-min;
+    init_step_size = _init_step_size;
+    max_step_size = max-min;
+    min_step_size=_min_step_size;
     
 }
 
@@ -85,8 +86,8 @@ double Pest::NextStimulus(double answer) //next stimulus receives an answer and 
             num_steps_samedir=0;                // count how many steps goes after each reversal (change of direction)
             direction= (-1)*direction;          //direction has changed
             step = step / 2.0;                  //Rule 1: step size halves
-            if (step  >max_step) step=max_step; //Rule 6
-            if (step  <min_step) flag=false;    //Rule 5
+            if (step  >max_step_size) step=max_step_size; //Rule 6
+            if (step  <min_step_size) flag=false;    //Rule 5
         }
         else if (prev_answer == answer)
         {
@@ -101,8 +102,9 @@ double Pest::NextStimulus(double answer) //next stimulus receives an answer and 
             else{
                 UpdateStepSize();   //Update next step size            
             }
-            if (step  >max_step) step=max_step;  //Rule 6
-            if (step  <min_step) flag=false;     //Rule 5
+            if (step  >max_step_size) step=max_step_size;  //Rule 6
+            if (step  <min_step_size) flag=false;     //Rule 5
+
         }
         NewStimulusGenerator();  //Generate the next stimulus
         prev_answer=answer;      //replace the previous answer with the current answer.
@@ -119,9 +121,10 @@ int Pest::GetTrialNumber(){ //Get trial number to be used in main
 
 void Pest::NewStimulusGenerator(){
     double temp_stimulus = new_stimulus[n-1] + (direction) * (step);
-    if (temp_stimulus >=max){ //If after summation goes above max, then it halves
+    if (temp_stimulus>=max){ //If after summation goes above max, then it halves
         new_stimulus[n]=(new_stimulus[n-1]+max)/2.0;
         step = max-new_stimulus[n];
+        std::cout<<"heelooooooo"<<endl;
     }
     else if (temp_stimulus <=min){  //Rule 7: "Bumping into zero" rule. If the step size will modify the size of the stimulus 
                                     //difference to a difference below zero, the step size is successively halved
@@ -161,11 +164,11 @@ void Pest::UpdateStepSize() //keep the step size to be the the same if (num_step
                       
 
 void Pest::SetInitialSteps(double answer){ //Rule 2: For the first and second iterations step size is equal to initial step, and direction changes upon reversal
-    step = init_step;
+    step = init_step_size;
     if (prev_answer != answer)
     {
         direction = -1.0 * direction;
     }
-    new_stimulus[n]=new_stimulus[n-1]+ direction * (init_step);
+    new_stimulus[n]=new_stimulus[n-1]+ direction * (init_step_size);
     prev_answer=answer;
 }

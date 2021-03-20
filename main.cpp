@@ -35,8 +35,35 @@
 
 #include "hapticengine.hpp"
 
+
+
+//==============================================================================
+/*
+    DEMO:   01-mydevice.cpp
+    This application illustrates how to program forces, torques and gripper
+    forces to your haptic device.
+    In this example the application opens an OpenGL window and displays a
+    3D cursor for the device connected to your computer. If the user presses 
+    onto the user button (if available on your haptic device), the color of 
+    the cursor changes from blue to green.
+    In the main haptics loop function  "updateHaptics()" , the position,
+    orientation and user switch status are read at each haptic cycle. 
+    Force and torque vectors are computed and sent back to the haptic device.
+*/
+//==============================================================================
+
 int main(int argc, char* argv[])
-{
+{//2200 100 2000 16
+    //srand(time(NULL)); 
+    //max_stiffness=atof(argv[1]);
+    //min_delta_stiff=atof(argv[2]);
+    //max_delta_stiff=atof(argv[3]);
+    //std::cout<<"1: "<<max_stiffness<<" 2: "<<min_delta_stiff<<" 3: "<<max_delta_stiff<<endl;
+
+    //double max_stiffness=2200;
+    //double min_delta_stiff=100;//k[2200],k[2100]
+    //double max_delta_stiff=2000.0;//k[2200],k[200]
+    //double initial_step=(max_delta_stiff-min_delta_stiff)/16.0;
        //--------------------------------------------------------------------------
     // INITIALIZATION
     //--------------------------------------------------------------------------

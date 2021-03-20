@@ -35,9 +35,11 @@
 //==============================================================================
 #define _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_WARNINGS
-
+#define ZERO 1e-10
+#define isSame(A, B) ( ((A-B) < ZERO) && ((A-B) > -ZERO) )
 #include <iostream>
 #include <vector>
+#include "simple826.hpp"
 #include <unistd.h>
 #include <sstream>
 #include <sys/types.h>
@@ -45,32 +47,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "forcesensor.hpp"
 #include <chrono>  // for high_resolution_clock
+#include "chai3d.h"
+#include "pest.hpp"
 #include <GLFW/glfw3.h>
-//------------------------------------------------------------------------------
 #include "Utils.h"
+#include "PointATC3DG.h"
 #include <usb.h>
 #include <fstream>
 #include <string>
-//------------------------------------------------------------------------------
-#include "chai3d.h"
-#include "pest.hpp"
-#include "simple826.hpp"
-#include "forcesensor.hpp"
-#include "PointATC3DG.h"
-//------------------------------------------------------------------------------
+#include <time.h> 
+
 using namespace chai3d;
 using namespace std;
 //------------------------------------------------------------------------------
 //typedef Eigen::Matrix<float, 7, 1> vector7f;
 //typedef Eigen::Matrix<float, 8, 1> vector8f;
+void readFTdata(void *shared_data);
+ForceSensor Force;
 
 //---------------------------------------------------------------------
-ForceSensor Force;
-//PointATC3DG bird; //Position Sensor
+//Position Sensor
+//PointATC3DG bird;
 
 
 //double dX, dY, dZ, dAzimuth, dElevation, dRoll;
+
 //int numsen=bird.getNumberOfSensors();
 
 //------------------------------------------------------------------------------
@@ -166,22 +169,33 @@ int width  = 0;
 int height = 0;
 
 // swap interval for the display context (vertical synchronization)
-int swapInterval = 1;
+//int swapInterval = 1;
 int rec_count=0;     
 //double Kp = 202.0; // [N/m]
-double Kp = 200.0; // [N/m]
+double stiffness = 200.0; // [N/m]
+
+
 int case_num =0;
 double adjust[22];
-double stiffness(double K);
+double Stiffness(double k);
 //double K[]={269.1499, 490.81957,697.33,889.5498, 1068.3, 1234.55, 1389.062,1532.7,    1666.4,    1790.978,    1907.287,    2016.2,    2118.6,  2215.3,    2307.2,    2395.18,    2480.07,   2562.74,    2644.055,    2724.877,    2806.07,    2888.495,    2973.02,3060.49,3151.79,3247.775,3349.3,3457.24,3572.4};
 //ouble first=0;
-double second=0;
-int min_dK=100;//k[2200],k[2100]
-int max_dK=2000.0;//k[2200],k[200]
-double init_step=(max_dK-min_dK)/16.0;
+
+//double min_delta_stiff;
+//double max_delta_stiff;
+//double max_stiffness;
+
+double max_stiffness=2200.0;
+double min_delta_stiff=100.0;//k[2200],k[2100]
+double max_delta_stiff=2000.0;//k[2200],k[200]
+double initial_step_size=(max_delta_stiff-min_delta_stiff)/16.0;
+double min_step_size =1.0;
 int trial_numbers=10; // After how many trials we want pest to exit.
-Pest pest(min_dK, max_dK, init_step);
-double first=stiffness(2200);//2200,200
+Pest pest(min_delta_stiff, max_delta_stiff, initial_step_size,min_step_size);
+double first_stimulus=max_stiffness;//2200,200
+double second_stimulus=max_stiffness-max_delta_stiff;
+int bool_random=0;
+double new_stimulus =0.0;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -204,21 +218,6 @@ void updateHaptics(void* shared_data);
 // this function closes the application
 void close(void);
 
-void readFTdata(void *shared_data);
-//==============================================================================
-/*
-    DEMO:   01-mydevice.cpp
-    This application illustrates how to program forces, torques and gripper
-    forces to your haptic device.
-    In this example the application opens an OpenGL window and displays a
-    3D cursor for the device connected to your computer. If the user presses 
-    onto the user button (if available on your haptic device), the color of 
-    the cursor changes from blue to green.
-    In the main haptics loop function  "updateHaptics()" , the position,
-    orientation and user switch status are read at each haptic cycle. 
-    Force and torque vectors are computed and sent back to the haptic device.
-*/
-//==============================================================================
 //------------------------------------------------------------------------------
 
 void windowSizeCallback(GLFWwindow* a_window, int a_width, int a_height)
@@ -284,7 +283,8 @@ void updateGraphics(void)
 //------------------------------------------------------------------------------
 
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods)
-{
+{	
+	//rand() % 2+ 1;
     // filter calls that only include a key press
     if ((a_action != GLFW_PRESS) && (a_action != GLFW_REPEAT))
     {
@@ -300,26 +300,102 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     /////////////////PEST
     else if (a_key == GLFW_KEY_N)
     {
-        Kp=stiffness(first); //2200   
-        std::cout<<"first "<<std::endl;
+    	if (bool_random ==0)
+    	{
+    		stiffness=Stiffness(first_stimulus); //2200   
+            std::cout<<"first "<< first_stimulus <<std::endl;
+    	}
+    	else{
+    		stiffness=Stiffness(second_stimulus);   //200 
+            std::cout<<"second: "<< second_stimulus<<std::endl;
+            //std::cout<<"whaaaaaaaaaaat: "<<stiffness<<endl;
+    	}
+        
     }
     else if (a_key == GLFW_KEY_M)
     {
-        Kp=stiffness(second);   //200 
-        std::cout<<"second: "<<std::endl;
+    	if (bool_random ==0)
+        {
+        	stiffness=Stiffness(second_stimulus);   //200 
+            std::cout<<"second: "<< second_stimulus<<std::endl;
+            //std::cout<<"stiff: "<<stiffness<<endl;
+    		
+    	}
+    	else{
+    		stiffness=Stiffness(first_stimulus); //2200   
+            std::cout<<"first "<< first_stimulus <<std::endl;
+            //std::cout<<"stiff: "<<stiffness<<endl;
+    	}
     }
-    else if (a_key == GLFW_KEY_0)
+    else if (a_key == GLFW_KEY_J)
     {
-        second = stiffness(2200-pest.NextStimulus(0));
-        std::cout<<"next stimulus0: "<<pest.NextStimulus(0)<<std::endl;
-
-
+    	if ((bool_random ==0)){
+    		std::cout<<"correct!"<<std::endl;
+    		new_stimulus= pest.NextStimulus(1);
+    		second_stimulus = max_stiffness-new_stimulus;//max-new>max
+    	    std::cout<<"next stimulus1: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
+    	    //std::cout<<"first "<< first_stimulus <<std::endl;
+    	    //std::cout<<"second: "<< second_stimulus<<std::endl;
+    	   if (pest.flag==false) 
+    	   {
+    	   		std::cout<<"step"<<endl;
+    	    	exit(-1);
+    	    }
+    	   // terminate();
+    	}
+    	else{
+    		std::cout<<"not correct!"<<std::endl;
+    		new_stimulus= pest.NextStimulus(0);
+    		second_stimulus = max_stiffness-new_stimulus;
+	        std::cout<<"next stimulus0: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
+	        //std::cout<<"first "<< first_stimulus <<std::endl;
+    	    //std::cout<<"second: "<< second_stimulus<<std::endl;
+    	    if (pest.flag==false) 
+    	    {
+    	    	std::cout<<"step"<<endl;
+    	        exit(-1);
+    	    }
+    	    //terminate();
+    	}
+    	//second_stimulus = Stiffness(max_stiffness-p0);
+        //std::cout<<"next: "<<bool_random<<std::endl;
+    	bool_random=rand() % 2;
+    	
     }
-    else if (a_key == GLFW_KEY_1)
+    else if (a_key == GLFW_KEY_K)
     {
-         second = stiffness(2200-pest.NextStimulus(1));
-         std::cout<<"next stimulus1: "<<pest.NextStimulus(1)<<std::endl;
-    }
+    	//bool_random=rand() % 2;    	//second_stimulus = Stiffness(max_stiffness-p1);
+    	if ((bool_random ==1)){
+    		std::cout<<"then correct!"<<std::endl;
+    		new_stimulus= pest.NextStimulus(1);
+    		second_stimulus = max_stiffness-new_stimulus;
+    	    std::cout<<"next stimulus1: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
+    	    //std::cout<<"first "<< first_stimulus <<std::endl;
+    	    //std::cout<<"second: "<< second_stimulus<<std::endl;
+    	    if (pest.flag==false) 
+    	    {
+    	    	std::cout<<"step"<<endl;
+    	        exit(-1);
+    	    }
+    	    //terminate();
+    	}
+    	else{
+    		std::cout<<"not correct!"<<std::endl;
+    		new_stimulus= pest.NextStimulus(0);
+    		second_stimulus = max_stiffness-new_stimulus;
+	        std::cout<<"next stimulus0: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
+	        //std::cout<<"first "<< first_stimulus <<std::endl;
+    	    //std::cout<<"second: "<< second_stimulus<<std::endl;
+    	    if (pest.flag==false) 
+    	    {
+    	    	std::cout<<"step"<<endl;
+    	        exit(-1);
+    	    }
+        //std::cout<<"nextttt: "<<bool_random<<std::endl;
+    	
+   	 	}
+    bool_random=rand() % 2;
+	}
 
 }
 
@@ -330,10 +406,15 @@ void updateHaptics(void* shared_data)
     // simulation in now running
     simulationRunning  = true;
     simulationFinished = false;
-
+    double prev_stiffness=0.0;
+    cVector3d forceField (0.0,0.0,0.0);
+    cVector3d gravityCorrection (3.5, 0.0, -2.5);
+	double add=0;
     // main haptic simulation loop
+    int loopcount=0;
     while(simulationRunning)
     {
+    	//loopcount++;
         /////////////////////////////////////////////////////////////////////
         // READ HAPTIC DEVICE
         /////////////////////////////////////////////////////////////////////
@@ -347,32 +428,32 @@ void updateHaptics(void* shared_data)
         hapticDevice->getRotation(rotation);
 
         // read gripper position
-        double gripperAngle;
-        hapticDevice->getGripperAngleRad(gripperAngle);
+        //double gripperAngle;
+        //hapticDevice->getGripperAngleRad(gripperAngle);q
 
         // read linear velocity 
         cVector3d linearVelocity;
         hapticDevice->getLinearVelocity(linearVelocity);
 
         // read angular velocity
-        cVector3d angularVelocity;
-        hapticDevice->getAngularVelocity(angularVelocity);
+        //cVector3d angularVelocity;
+        //hapticDevice->getAngularVelocity(angularVelocity);
 
         // read gripper angular velocity
-        double gripperAngularVelocity;
-        hapticDevice->getGripperAngularVelocity(gripperAngularVelocity);
+        //double gripperAngularVelocity;
+        //hapticDevice->getGripperAngularVelocity(gripperAngularVelocity);
 
         // read user-switch status (button 0)
-        bool button0, button1, button2, button3;
-        button0 = false;
-        button1 = false;
-        button2 = false;
-        button3 = false;
+        //bool button0, button1, button2, button3;
+        //button0 = false;
+        //button1 = false;
+        //button2 = false;
+        //button3 = false;
 
-        hapticDevice->getUserSwitch(0, button0);
-        hapticDevice->getUserSwitch(1, button1);
-        hapticDevice->getUserSwitch(2, button2);
-        hapticDevice->getUserSwitch(3, button3);
+        //hapticDevice->getUserSwitch(0, button0);
+        //hapticDevice->getUserSwitch(1, button1);
+        //hapticDevice->getUserSwitch(2, button2);
+        //hapticDevice->getUserSwitch(3, button3);
 
 
         /////////////////////////////////////////////////////////////////////
@@ -393,6 +474,7 @@ void updateHaptics(void* shared_data)
         {
             cursor->m_material->setGreenMediumAquamarine();
         }
+        /*
         else if (button1)
         {
             cursor->m_material->setYellowGold();
@@ -413,7 +495,7 @@ void updateHaptics(void* shared_data)
         // update global variable for graphic display update
         hapticDevicePosition = position;
 
-
+*/
         /////////////////////////////////////////////////////////////////////
         // COMPUTE AND APPLY FORCES
         /////////////////////////////////////////////////////////////////////
@@ -428,25 +510,59 @@ void updateHaptics(void* shared_data)
         
         // variables for forces
         cVector3d force (0,0,0);
-        cVector3d gravityCorrection (3.5, 0.0, -2.5);
         cVector3d torque (0,0,0);
         double gripperForce = 0.0;
-    
-        // apply force field
-        if (useForceField)
+        
+        if (isSame(prev_stiffness,stiffness))    
         {
-            // compute linear force
-            
-            cVector3d forceField = Kp * (desiredPosition - position);
-            force.add(forceField);
-            force.add(gravityCorrection);
-        }
+	    	//std::cout<<"add"<<std::endl;
+	    	loopcount=0;
+	        prev_stiffness=stiffness;
+	        forceField = stiffness * (desiredPosition - position);
+	        force.add(gravityCorrection);
+	        force.add(forceField);
+	        //prev_stiffness=stiffness;
+	   		hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
+		}    
+	    else
+	    {
+	    	loopcount++;
+	    	if (loopcount==1){
+	    		add= (stiffness-prev_stiffness)/200.0;
+	    		//std::cout<<"qqqqqqqqqqqqqqqqqqq: "<<stiffness<<"   "<<prev_stiffness<<"   "<<add<<endl;
 
-        hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
+	    	}
+	    	//double add_stiff=0.0;
+	    	force.add(gravityCorrection);
+	    	//for (int i=0;i<5;i++){
+	    		//add_stiff=add_stiff+add;
+	    		forceField = (prev_stiffness+add) * (desiredPosition - position);
 
+	    		force.add(forceField);
+	    		//std::cout<<"hereeee: "<<"add" <<add <<" pre "<<prev_stiffness <<" sum "<<prev_stiffness+add<< " goal: "<<stiffness<<endl;
+	    		
+	    		//std::cout<<"hereeee: "<<"add" <<add<<"    "<<prev_stiffness+add<<endl; 
+	    		prev_stiffness=prev_stiffness+add;
+	    		//if (isSame(prev_stiffness,stiffness))  std::cout<<"yeeeeessssssss"<<std::endl;
+				hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);	
+	    	//}
+	    }
+
+		
         // signal frequency counter
-        freqCounterHaptics.signal(1);
+        //if (stiffness<300){
+        //	        desiredPosition.set(0.03, 0.0, 0.0);
+
+        //}
+        /*
+        forceField = stiffness * (desiredPosition - position);
+		force.add(forceField);
+        cVector3d gravityCorrection (3.5, 0.0, -2.5);
+        hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
+*/
+   		freqCounterHaptics.signal(1);
     }
+    //freqCounterHaptics.signal(1);
     
     // exit haptics thread
     simulationFinished = true;
@@ -483,7 +599,7 @@ void readFTdata(void *shared_data)
         //std::cout<<"Success"<<std::endl;
         FT_data = Force.GetCurrentFT(numSample) ;
         *(Vector6FT*)(shared_data) = FT_data;
-        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<"\n";
+        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<stiffness<<"\n";
         //fprintf(outFilePtr, "%f, %f, %f, %f, %f, %f, %.4f, %.4f, %.4f, %.4f\n", FT_data[0], FT_data[1], FT_data[2], FT_data[3], FT_data[4], FT_data[5], position(0), position(1), position(2), Kp);
         //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
         //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
@@ -508,8 +624,11 @@ void readFTdata(void *shared_data)
     
 }
 
-double stiffness(double k){
-    double stiffness= -5.27e-06*k*k + 0.9599*k + -6.851;
+double Stiffness(double k){
+   //double stiffness= -5.27e-06*k*k + 0.9599*k + -6.851;
+//   double stiffness= 80.88*k*k + 820.6*k + 1527;
+	 double stiffness= -3.4899e-04*k*k + 2.0251*k + (-147.2680);
+    
     return stiffness;
 }
 
