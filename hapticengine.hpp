@@ -69,12 +69,12 @@ ForceSensor Force;
 
 //---------------------------------------------------------------------
 //Position Sensor
-//PointATC3DG bird;
+PointATC3DG bird;
 
 
-//double dX, dY, dZ, dAzimuth, dElevation, dRoll;
+double dX, dY, dZ, dAzimuth, dElevation, dRoll;
 
-//int numsen=bird.getNumberOfSensors();
+int numsen=bird.getNumberOfSensors();
 
 //------------------------------------------------------------------------------
 // GENERAL SETTINGS
@@ -186,16 +186,16 @@ double Stiffness(double k);
 //double max_stiffness;
 
 double max_stiffness=2200.0;
-double min_delta_stiff=100.0;//k[2200],k[2100]
-double max_delta_stiff=2000.0;//k[2200],k[200]
-double initial_step_size=(max_delta_stiff-min_delta_stiff)/16.0;
+double min_delta_stiff=50.0;//k[2200],k[2100]
+double max_delta_stiff=max_stiffness-200.0;//k[2200],k[200]
+double initial_step_size=(max_delta_stiff-min_delta_stiff);
 double min_step_size =1.0;
 int trial_numbers=10; // After how many trials we want pest to exit.
 Pest pest(min_delta_stiff, max_delta_stiff, initial_step_size,min_step_size);
 double first_stimulus=max_stiffness;//2200,200
 double second_stimulus=max_stiffness-max_delta_stiff;
 int bool_random=0;
-double new_stimulus =0.0;
+double new_stimulus =max_delta_stiff;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -585,6 +585,8 @@ void readFTdata(void *shared_data)
     //char outFileString[13] = "testing.csv";
     //FILE *outFilePtr;
     //outFilePtr = fopen(outFileString, "w+");
+    bird.setSuddenOutputChangeLock( 0 );
+    std::cout << "nSensors: " << numsen << std::endl;
     std::cout << "Here!!!" << std::endl;
     int num=1;
     Vector6FT FT_data;
@@ -595,6 +597,21 @@ void readFTdata(void *shared_data)
     //int rec_count=0;     
     //time_t ta=time(NULL);
     //time_t tb=time(NULL);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+	while (!exitKey) {
+        bird.getCoordinatesAngles( sennum, dX, dY, dZ, dAzimuth, dElevation, dRoll );
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+        FT_data = Force.GetCurrentFT(numSample) ;
+        *(Vector6FT*)(shared_data) = FT_data;
+        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<stiffness<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<" "<<new_stimulus<<" "<<first_stimulus<<" "<<second_stimulus<<"\n";
+        //myfile2 <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
+        //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
+        //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
+    }
+
+    /*
     while (!exitKey) {
         //std::cout<<"Success"<<std::endl;
         FT_data = Force.GetCurrentFT(numSample) ;
@@ -605,6 +622,7 @@ void readFTdata(void *shared_data)
         //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
         
     }
+    */
      myfile.close();
     /*
     while (!exitKey) {
