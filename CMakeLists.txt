@@ -45,6 +45,12 @@ set (CHAI3D_LIBRARIES ${CHAI3D_LIBRARIES} usb-1.0 rt pthread dl)
 add_executable(chai_demo main.cpp)
 
 add_library(
+	staircase
+	staircase.cpp
+	staircase.hpp
+	)
+
+add_library(
 	pest
 	pest.cpp
 	pest.hpp
@@ -81,5 +87,6 @@ target_link_libraries(PointATC3DG PUBLIC "/home/naghmehz/Documents/ATC3DGTracker
 target_link_libraries(chai_demo PRIVATE  forcesensor simple826 m)
 target_link_libraries(chai_demo PRIVATE  PointATC3DG m)
 #target_link_libraries(chai_demo PRIVATE  hapticengine m)
+target_link_libraries(chai_demo PRIVATE  staircase m)
 target_link_libraries(chai_demo PRIVATE  pest m)
 target_link_libraries(chai_demo  PUBLIC  "/home/naghmehz/Documents/chai3d-3.2.0/lib/release/lin-x86_64-cc/libchai3d.a" "/home/naghmehz/Documents/chai3d-3.2.0/external/DHD/lib/lin-x86_64/libdrd.a" usb-1.0 glfw OpenGL::GL  ${CMAKE_DL_LIBS} Threads::Threads)

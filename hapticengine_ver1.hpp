@@ -50,7 +50,7 @@
 #include "forcesensor.hpp"
 #include <chrono>  // for high_resolution_clock
 #include "chai3d.h"
-#include "staircase.hpp"
+#include "pest.hpp"
 #include <GLFW/glfw3.h>
 #include "Utils.h"
 #include "PointATC3DG.h"
@@ -184,21 +184,18 @@ double Stiffness(double k);
 //double min_delta_stiff;
 //double max_delta_stiff;
 //double max_stiffness;
-double min_stiffness=100.0;
-double max_stiffness=1800.0;
-//double min_delta_stiff=100.0;//k[2200],k[2100]
-//double max_delta_stiff=max_stiffness-min_stiffness;//k[2200],k[200]
-//double step_size=(max_delta_stiff-min_delta_stiff)/16;
-double step_size=100;
-//double initial_step_size=(max_delta_stiff-min_delta_stiff)/8;
-//double min_step_size =10.0;
-int trial_numbers=100; // After how many trials we want pest to exit.
-Staircase staircase(min_stiffness, max_stiffness, step_size);
+
+double max_stiffness=2200.0;
+double min_delta_stiff=100.0;//k[2200],k[2100]
+double max_delta_stiff=max_stiffness-200.0;//k[2200],k[200]
+double initial_step_size=(max_delta_stiff-min_delta_stiff)/8;
+double min_step_size =10.0;
+int trial_numbers=10; // After how many trials we want pest to exit.
+Pest pest(min_delta_stiff, max_delta_stiff, initial_step_size,min_step_size);
 double first_stimulus=max_stiffness;//2200,200
-//double init_stimulus=min_stiffness;
-double second_stimulus=min_stiffness;
+double second_stimulus=max_stiffness-max_delta_stiff;
 int bool_random=0;
-double new_stimulus =max_stiffness;
+double new_stimulus =max_delta_stiff;
 //------------------------------------------------------------------------------
 // DECLARED FUNCTIONS
 //------------------------------------------------------------------------------
@@ -334,28 +331,26 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     {
     	if ((bool_random ==0)){
     		std::cout<<"correct!"<<std::endl;
-    		new_stimulus= staircase.NextStimulus(1);
-    		second_stimulus = new_stimulus;
-            //second_stimulus = max_stiffness-new_stimulus;//max-new>max
+    		new_stimulus= pest.NextStimulus(1);
+    		second_stimulus = max_stiffness-new_stimulus;//max-new>max
     	    std::cout<<"next stimulus1: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
     	    //std::cout<<"first "<< first_stimulus <<std::endl;
     	    //std::cout<<"second: "<< second_stimulus<<std::endl;
-    	    if (staircase.flag==false) 
-    	    {
-    	    	std::cout<<"step"<<endl;
+    	   if (pest.flag==false) 
+    	   {
+    	   		std::cout<<"step"<<endl;
     	    	exit(-1);
     	    }
     	   // terminate();
     	}
     	else{
     		std::cout<<"not correct!"<<std::endl;
-    		new_stimulus= staircase.NextStimulus(0);
-    		second_stimulus = new_stimulus;
-            //second_stimulus = max_stiffness-new_stimulus;
+    		new_stimulus= pest.NextStimulus(0);
+    		second_stimulus = max_stiffness-new_stimulus;
 	        std::cout<<"next stimulus0: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
 	        //std::cout<<"first "<< first_stimulus <<std::endl;
     	    //std::cout<<"second: "<< second_stimulus<<std::endl;
-    	    if (staircase.flag==false) 
+    	    if (pest.flag==false) 
     	    {
     	    	std::cout<<"step"<<endl;
     	        exit(-1);
@@ -372,32 +367,30 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     	//bool_random=rand() % 2;    	//second_stimulus = Stiffness(max_stiffness-p1);
     	if ((bool_random ==1)){
     		std::cout<<"then correct!"<<std::endl;
-    		new_stimulus= staircase.NextStimulus(1);
-    		second_stimulus = new_stimulus;
-            //second_stimulus = max_stiffness-new_stimulus;
+    		new_stimulus= pest.NextStimulus(1);
+    		second_stimulus = max_stiffness-new_stimulus;
     	    std::cout<<"next stimulus1: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
     	    //std::cout<<"first "<< first_stimulus <<std::endl;
     	    //std::cout<<"second: "<< second_stimulus<<std::endl;
-            if (staircase.flag==false) 
-            {
-                std::cout<<"step"<<endl;
-                exit(-1);
-            }
+    	    if (pest.flag==false) 
+    	    {
+    	    	std::cout<<"step"<<endl;
+    	        exit(-1);
+    	    }
     	    //terminate();
     	}
     	else{
     		std::cout<<"not correct!"<<std::endl;
-    		new_stimulus= staircase.NextStimulus(0);
-    		second_stimulus =  new_stimulus;
-            //second_stimulus = max_stiffness-new_stimulus;
+    		new_stimulus= pest.NextStimulus(0);
+    		second_stimulus = max_stiffness-new_stimulus;
 	        std::cout<<"next stimulus0: "<<new_stimulus<<"  "<<second_stimulus<<std::endl;
 	        //std::cout<<"first "<< first_stimulus <<std::endl;
     	    //std::cout<<"second: "<< second_stimulus<<std::endl;
-            if (staircase.flag==false) 
-            {
-                std::cout<<"step"<<endl;
-                exit(-1);
-            }
+    	    if (pest.flag==false) 
+    	    {
+    	    	std::cout<<"step"<<endl;
+    	        exit(-1);
+    	    }
         //std::cout<<"nextttt: "<<bool_random<<std::endl;
     	
    	 	}
@@ -612,7 +605,7 @@ void readFTdata(void *shared_data)
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
         FT_data = Force.GetCurrentFT(numSample) ;
         *(Vector6FT*)(shared_data) = FT_data;
-        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<stiffness<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<" "<<" "<<first_stimulus<<" "<<second_stimulus<<"\n";
+        myfile <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<stiffness<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<" "<<new_stimulus<<" "<<first_stimulus<<" "<<second_stimulus<<"\n";
         //myfile2 <<FT_data[0]<<" "<< FT_data[1]<< " "<<FT_data[2]<< " "<<FT_data[3]<<" "<<FT_data[4]<<" "<< FT_data[5]<< " "<<position(0)<< " "<< position(1)<< " "<< position(2)<< " "<<Kp<<" "<<dX<< " "<<dY<< " "<<dZ<< " "<<dAzimuth<< " "<<dElevation<< " "<<dRoll<< " "<<duration<<"\n";
         //std::cout << "\rX: " << dX << ", \tY: " << dY << ", \tZ: " << dZ;
         //std::cout << ", \tA: " << dAzimuth << ", \tE: " << dElevation << ", \tR: " << dRoll << std::endl;
